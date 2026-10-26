@@ -1,0 +1,7 @@
+.git
+.claude
+.DS_Store
+*.md
+Dockerfile
+fly.toml
+node_modules

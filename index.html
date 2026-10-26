@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bumerangi Fu</title>
+<style>
+  /* Czcionki z projektu (katalog fonts/), nic nie jest pobierane z internetu */
+  @font-face {
+    font-family: 'Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap;
+    src: url(./fonts/fredoka-latin-ext-wght-normal.woff2) format('woff2-variations');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+  }
+  @font-face {
+    font-family: 'Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap;
+    src: url(./fonts/fredoka-latin-wght-normal.woff2) format('woff2-variations');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face {
+    font-family: 'Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap;
+    src: url(./fonts/nunito-latin-ext-wght-normal.woff2) format('woff2-variations');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+  }
+  @font-face {
+    font-family: 'Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap;
+    src: url(./fonts/nunito-latin-wght-normal.woff2) format('woff2-variations');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  :root {
+    --ink: #2b1d14;
+    --paper: #fffaf0;
+    --accent: #ff7a1a;
+    --accent-dark: #d95f00;
+    --muted: #8a7a6a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9fd3ef; color: var(--ink); font-family: Nunito, system-ui, sans-serif; }
+  #app, #app canvas { position: fixed; inset: 0; display: block; cursor: crosshair; }
+  [hidden] { display: none !important; }
+  h1, h2, .big, button.big { font-family: 'Fredoka', system-ui, sans-serif; font-weight: 700; letter-spacing: 0.01em; }
+
+  .panel {
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: 22px;
+    box-shadow: 0 8px 0 var(--ink), 0 20px 40px rgba(0,0,0,0.25);
+    padding: 22px;
+  }
+
+  #menu, #start, #online {
+    position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100vh - 40px); overflow-y: auto;
+  }
+  #menu h1, #start h1, #online h1 { margin: 0 0 16px; font-size: 46px; line-height: 1; color: var(--accent); -webkit-text-stroke: 2px var(--ink); }
+  #online h1 { font-size: 38px; }
+  #start .tagline { margin: -8px 0 14px; color: var(--muted); font-weight: 700; }
+
+  /* ekran startowy: wybór trybu gry */
+  .mode {
+    display: block; width: 100%; margin-bottom: 12px; padding: 14px 16px; text-align: left; cursor: pointer;
+    font: inherit; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 16px;
+    box-shadow: 0 5px 0 var(--ink); transition: transform 0.05s;
+  }
+  .mode:hover { background: #fff0d4; }
+  .mode:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+  .mode b { display: block; font-family: 'Fredoka', system-ui, sans-serif; font-size: 26px; color: var(--accent); }
+  .mode span { display: block; font-weight: 600; color: var(--muted); }
+  .mode em { display: block; margin-top: 6px; font-style: normal; font-weight: 800; color: #2e7d32; }
+  .mode em:empty { display: none; }
+  .back {
+    margin: 0 0 8px; padding: 2px 10px 2px 6px; font: inherit; font-weight: 800; font-size: 13px; cursor: pointer;
+    background: transparent; border: 2px solid var(--ink); border-radius: 999px; color: var(--ink);
+  }
+  .back:hover { background: #ffe9d4; }
+
+  .slot { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .slot .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c); border: 2px solid var(--ink); flex: none; }
+  .slot.off .dot { background: transparent; }
+  .slot.off .charpick { opacity: 0.35; }
+  select {
+    flex: 1; min-width: 0; font: inherit; font-weight: 700; padding: 6px 8px;
+    border: 2px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink);
+  }
+  .charpick { display: flex; align-items: center; gap: 4px; flex: none; }
+  .charpick .cname { width: 92px; text-align: center; font-weight: 800; }
+  .charpick button, .seg button {
+    font: inherit; font-weight: 800; border: 2px solid var(--ink); background: #fff; color: var(--ink);
+    border-radius: 10px; cursor: pointer; min-width: 32px; height: 32px;
+  }
+  .charpick button:hover, .seg button:hover { background: #ffe9d4; }
+  .cname.locked { color: var(--muted); }
+  .cname .lock { width: 12px; height: 12px; margin-right: 3px; vertical-align: -1px; color: var(--ink); }
+  .locked-note { color: var(--accent-dark); }
+
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-weight: 800; }
+  .seg { display: flex; gap: 4px; }
+  .seg button { padding: 0 10px; }
+  .seg button.on { background: var(--accent); color: #fff; }
+
+  #warn { min-height: 20px; margin-top: 10px; color: #c62828; font-weight: 800; font-size: 14px; }
+
+  button.big {
+    display: block; width: 100%; margin-top: 6px; padding: 12px; font-size: 26px; cursor: pointer;
+    color: #fff; background: var(--accent); border: 3px solid var(--ink); border-radius: 14px;
+    box-shadow: 0 5px 0 var(--ink); transition: transform 0.05s;
+  }
+  button.big:hover { background: var(--accent-dark); }
+  button.big:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+  button.big:disabled { background: #bbb; cursor: not-allowed; }
+  button.plain {
+    display: block; width: 100%; margin-top: 10px; padding: 8px; font: inherit; font-weight: 800; cursor: pointer;
+    background: transparent; border: 2px solid var(--ink); border-radius: 12px; color: var(--ink);
+  }
+
+  details { margin-top: 14px; font-size: 14px; }
+  summary { cursor: pointer; font-weight: 800; }
+  details ul { padding-left: 18px; margin: 8px 0 0; }
+  details li { margin-bottom: 4px; }
+  kbd { background: #fff; border: 1.5px solid var(--ink); border-bottom-width: 3px; border-radius: 5px; padding: 0 5px; font-family: inherit; font-weight: 800; font-size: 12px; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  #scores { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: calc(100% - 24px); }
+  .card {
+    background: var(--paper); border: 3px solid var(--ink); border-top: 7px solid var(--c);
+    border-radius: 12px; padding: 4px 10px 6px; min-width: 110px; box-shadow: 0 4px 0 var(--ink);
+    transition: opacity 0.2s;
+  }
+  .card.dead { opacity: 0.45; }
+  .card .nm { font-size: 13px; white-space: nowrap; }
+  .card .tag { color: var(--c); font-weight: 800; -webkit-text-stroke: 0.4px var(--ink); }
+  .card .pts { margin-top: 1px; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .card .pts b { font-family: 'Fredoka', system-ui, sans-serif; font-size: 22px; line-height: 1; color: var(--ink); font-weight: 700; }
+  .card .pw { margin-top: 3px; padding: 1px 6px; border-radius: 6px; font-size: 11px; font-weight: 800; color: #fff; background: var(--pc); white-space: nowrap; }
+  .board-table td.pts { font-weight: 800; }
+
+  #center { position: absolute; top: 40%; left: 0; right: 0; text-align: center; transform: translateY(-50%); }
+  #center .big { font-size: clamp(40px, 9vw, 96px); color: #fff; -webkit-text-stroke: 3px var(--ink); text-shadow: 0 6px 0 var(--ink); }
+  #center .sub { font-size: 22px; font-weight: 800; color: #fff; text-shadow: 0 2px 0 var(--ink), 0 0 6px rgba(0,0,0,0.5); }
+  #center.pop { animation: pop 0.35s ease-out both; }
+  #center.flash { animation: pop 0.35s ease-out both, fade 0.4s ease-in 0.7s forwards; }
+  @keyframes pop { from { transform: translateY(-50%) scale(0.4); opacity: 0; } to { transform: translateY(-50%) scale(1); opacity: 1; } }
+  @keyframes fade { to { opacity: 0; } }
+
+
+  #helpHint { position: absolute; right: 12px; bottom: 10px; font-size: 12px; font-weight: 700; color: var(--muted); opacity: 0.8; }
+  #helpHint kbd, #help kbd { font-size: 11px; }
+  #help {
+    position: fixed; right: 12px; bottom: 34px; z-index: 20; width: min(300px, calc(100vw - 24px));
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--ink);
+    padding: 8px 12px 10px; font-size: 13px; font-weight: 600; line-height: 1.5;
+  }
+  #help h3 { margin: 0 0 4px; font-family: 'Fredoka', system-ui, sans-serif; font-weight: 700; font-size: 20px; color: var(--accent); -webkit-text-stroke: 0.8px var(--ink); }
+  #help p { margin: 0; }
+
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(30, 20, 10, 0.35); padding: 16px; }
+  .overlay .panel { width: min(380px, 100%); text-align: center; }
+  .overlay h2 { margin: 0 0 6px; font-size: 40px; color: var(--accent); -webkit-text-stroke: 1.5px var(--ink); }
+  .overlay p { margin: 0 0 14px; font-weight: 700; }
+
+  #lobby {
+    position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
+    width: min(440px, calc(100vw - 32px));
+    max-height: calc(100vh - 40px); overflow-y: auto;
+  }
+  #lobby h1 { margin: 0; font-size: 46px; line-height: 1; color: var(--accent); -webkit-text-stroke: 2px var(--ink); }
+  #lobby .tagline { margin: 6px 0 4px; color: var(--muted); font-weight: 600; }
+
+  .lan { margin-top: 16px; padding-top: 14px; border-top: 2px dashed rgba(43, 29, 20, 0.25); }
+  .lan-title { font-weight: 800; margin-bottom: 8px; }
+  .lan .plain { margin-top: 0; }
+  .nick {
+    width: 100%; font: inherit; font-weight: 700; padding: 7px 10px;
+    border: 2px solid var(--ink); border-radius: 12px; background: #fff; color: var(--ink);
+  }
+  #lanIdle .plain { margin-top: 8px; }
+  #lanIdle .plain:disabled { opacity: 0.45; cursor: not-allowed; }
+  .sub-title { margin: 14px 0 6px; font-weight: 800; }
+
+  /* wybór postaci w stylu LoL: siatka portretów */
+  .char-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .tile {
+    position: relative; padding: 2px 2px 4px; cursor: pointer; font: inherit;
+    background: #fff; border: 2px solid var(--ink); border-radius: 10px; color: var(--ink);
+    display: flex; flex-direction: column; align-items: center; overflow: hidden;
+  }
+  .tile img { width: 100%; aspect-ratio: 1; display: block; }
+  .tile .tname { font-size: 11px; font-weight: 800; line-height: 1.1; }
+  .tile:hover:not(:disabled) { background: #ffe9d4; }
+  .tile.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); background: #fff0d4; }
+  .tile.taken { cursor: not-allowed; }
+  .tile.taken img { filter: grayscale(1); opacity: 0.4; }
+  .tile .tby {
+    position: absolute; top: 28%; left: 0; right: 0; font-size: 11px; font-weight: 800;
+    background: rgba(43, 29, 20, 0.8); color: #fff; padding: 1px 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tile.locked img { filter: grayscale(0.7) brightness(0.9); }
+  .tile .tlock {
+    position: absolute; top: 4px; right: 4px; display: flex; align-items: center; gap: 2px;
+    font-size: 10px; font-weight: 800; background: #f2c230; border: 1.5px solid var(--ink); border-radius: 6px; padding: 0 3px;
+  }
+  .tile .tlock .lock { width: 10px; height: 10px; }
+
+  .players { display: flex; flex-direction: column; gap: 4px; }
+  .player {
+    display: flex; align-items: center; gap: 8px; padding: 5px 8px; font-weight: 700; font-size: 14px;
+    background: #fff; border: 2px solid var(--ink); border-left: 7px solid var(--c); border-radius: 10px;
+  }
+  .player .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player .pchar { color: var(--muted); font-size: 13px; }
+  .badge { font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; border: 1.5px solid var(--ink); }
+  .player .kick {
+    flex: none; padding: 1px 8px; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+    color: #fff; background: #c62828; border: 1.5px solid var(--ink); border-radius: 999px;
+  }
+  .player .kick:hover { background: #8e0000; }
+  .badge.ready { background: #34c759; color: #fff; }
+  .badge.wait { background: #fff; color: var(--muted); }
+  .badge.bot { background: #eee; color: var(--muted); }
+  .badge.dance { background: #b455ff; color: #fff; }
+  .badge.spect { background: #fff; color: var(--muted); border-style: dashed; }
+  .player.spect { opacity: 0.85; }
+  #watching {
+    position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+    font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 0 var(--ink), 0 0 6px rgba(0,0,0,0.5);
+  }
+
+  .lobby-actions { display: flex; gap: 8px; align-items: stretch; margin-top: 12px; }
+  .lobby-actions .big { flex: 1; margin-top: 0; }
+  .lobby-actions .plain { width: auto; flex: 1; margin-top: 0; }
+  .lobby-actions .plain.on { background: #b455ff; color: #fff; }
+  #readyBtn.on { background: #34c759; }
+  .hint { margin: 8px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .addr {
+    display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 6px 6px 6px 10px; font-weight: 800; font-size: 15px;
+    background: #fff; border: 2px solid var(--ink); border-radius: 10px;
+  }
+  .addr span { flex: 1; min-width: 0; overflow-wrap: anywhere; user-select: all; }
+  .addr .copy {
+    flex: none; padding: 3px 10px; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+    color: #fff; background: var(--accent); border: 2px solid var(--ink); border-radius: 8px;
+  }
+  .addr-title { margin-top: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  #unhostBtn { margin-top: 10px; }
+  #lanSection .lan-title { margin-top: 0; }
+  .lan-msg { margin-top: 8px; font-weight: 800; font-size: 14px; color: var(--accent-dark); }
+
+  #board { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; }
+  .board-panel {
+    width: min(540px, 100%); padding: 18px 22px; background: var(--paper);
+    border: 4px solid var(--ink); border-radius: 22px;
+    box-shadow: 0 8px 0 var(--ink), 0 20px 40px rgba(0,0,0,0.25);
+    animation: boardIn 0.3s ease-out both;
+  }
+  .board-panel h2 { margin: 0; text-align: center; font-size: 36px; color: var(--accent); -webkit-text-stroke: 1.5px var(--ink); }
+  .board-panel .sub { margin: 2px 0 12px; text-align: center; font-weight: 700; color: var(--muted); }
+  @keyframes boardIn { from { transform: scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .board-table { width: 100%; border-collapse: collapse; font-weight: 700; text-align: left; }
+  .board-table th { padding: 0 6px 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .board-table td { padding: 7px 6px; border-top: 2px solid rgba(43, 29, 20, 0.12); white-space: nowrap; }
+  .board-table .num { text-align: center; font-variant-numeric: tabular-nums; }
+  .board-table tr.win td { background: #fff0d4; }
+  .board-table .who { display: flex; align-items: center; gap: 6px; font-weight: 800; }
+  .board-table .who i { width: 12px; height: 12px; border-radius: 50%; background: var(--c); border: 2px solid var(--ink); flex: none; }
+  .plus { margin-left: 6px; padding: 0 6px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; }
+  #end .panel { width: min(520px, 100%); }
+  #endBoard { margin-bottom: 14px; }
+  #endWarn { color: #c62828; font-size: 14px; font-weight: 800; }
+  @media (max-width: 480px) { .board-table .col-char { display: none; } }
+
+  .client-only { display: none !important; }
+  .net-client .client-only { display: block !important; }
+  .net-client #again, .net-client #toMenu, .net-client #resume, .net-client #quit { display: none; }
+
+  @media (max-width: 600px) {
+    #menu, #lobby, #start, #online { left: 16px; top: 16px; transform: none; max-height: calc(100vh - 32px); }
+  }
+
+  /* dźwięk w prawym górnym rogu */
+  #sound {
+    position: fixed; top: 10px; right: 12px; z-index: 30; display: flex; align-items: center; gap: 6px;
+    padding: 4px 8px 4px 4px; background: color-mix(in srgb, var(--paper) 90%, transparent);
+    border: 2px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink);
+  }
+  #muteBtn { width: 30px; height: 30px; padding: 3px; border: none; background: transparent; color: var(--ink); cursor: pointer; }
+  #muteBtn svg { width: 100%; height: 100%; display: block; }
+  #muteBtn .cross { display: none; }
+  #sound.muted #muteBtn .cross { display: inline; }
+  #sound.muted #muteBtn .waves { display: none; }
+  #sound.muted #volume { opacity: 0.4; }
+  #volume { width: 90px; accent-color: var(--accent); cursor: pointer; }
+  @media (max-width: 600px) { #volume { width: 60px; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- dźwięk: głośnik (wycisz, M) i suwak głośności; widoczny na każdym ekranie -->
+<div id="sound">
+  <button id="muteBtn" aria-label="Wycisz dźwięk (M)" title="Wycisz dźwięk (M)">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="cross" d="M16 9l6 6M22 9l-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <input id="volume" type="range" min="0" max="100" step="5" aria-label="Głośność">
+</div>
+
+<div id="hud" hidden>
+  <div id="scores"></div>
+  <div id="center"></div>
+  <div id="board" hidden></div>
+  <div id="watching" hidden>Oglądasz ten mecz</div>
+  <div id="helpHint"><kbd>H</kbd> — sterowanie</div>
+</div>
+
+<!-- ściąga pod H: poza HUD-em, żeby działała też w menu i lobby -->
+<div id="help" hidden>
+  <h3>Sterowanie</h3>
+  <p><b>Ruch:</b> <kbd>WASD</kbd> / strzałki</p>
+  <p><b>Atak:</b> <kbd>Spacja</kbd> / <kbd>LPM</kbd> — stuknij = cięcie, przytrzymaj = rzut</p>
+  <p><b>Zryw:</b> <kbd>Shift</kbd> / <kbd>PPM</kbd></p>
+  <p><b>Taniec:</b> <kbd>T</kbd> — także w grze; ruch go przerywa</p>
+  <p><b>Dźwięk:</b> <kbd>M</kbd> wycisza, głośność w prawym górnym rogu</p>
+  <p>Celuj kursorem lub kierunkiem; <kbd>H</kbd> zamyka</p>
+</div>
+
+<div id="start" class="panel">
+  <h1>Bumerangi Fu</h1>
+  <p class="tagline">W co gramy?</p>
+  <button id="modeLocal" class="mode">
+    <b>Z botami</b>
+    <span>Grasz sam na tym urządzeniu przeciwko botom.</span>
+  </button>
+  <button id="modeOnline" class="mode">
+    <b>W sieci</b>
+    <span>Załóż pokój albo dołącz do znajomych w tej samej sieci.</span>
+    <em id="modeRoom"></em>
+  </button>
+  <p class="hint">Naciśnij <kbd>H</kbd>, by zobaczyć sterowanie.</p>
+</div>
+
+<div id="online" class="panel" hidden>
+  <button class="back" data-back>‹ Zmień tryb</button>
+  <h1>Gra w sieci</h1>
+  <div id="lanIdle">
+    <input id="nick" class="nick" maxlength="8" placeholder="Twój nick" autocomplete="off">
+    <p id="lanStatus" class="hint"></p>
+    <button id="joinBtn" class="plain" hidden></button>
+    <button id="spectateBtn" class="plain" hidden>Oglądaj jako widz</button>
+    <button id="hostBtn" class="plain" hidden>Załóż pokój</button>
+  </div>
+  <div id="lanMsg" class="lan-msg"></div>
+</div>
+
+<div id="menu" class="panel" hidden>
+  <button id="menuBack" class="back" data-back>‹ Zmień tryb</button>
+  <h1>Bumerangi Fu</h1>
+
+  <!-- widok pokoju sieciowego (tylko u gospodarza): zamiast wierszy z miejscami -->
+  <div id="lanSection" hidden>
+    <div class="lan-title">Twój pokój</div>
+    <p class="hint">Wyślij znajomym link:</p>
+    <div id="lanAddr"></div>
+    <div class="sub-title">Twoja postać</div>
+    <div id="hostGrid" class="char-grid"></div>
+    <div class="sub-title">Gracze w pokoju</div>
+    <div id="lanPlayers" class="players"></div>
+    <div id="lanSpectWrap" hidden>
+      <div class="sub-title">Widzowie</div>
+      <div id="lanSpectators" class="players"></div>
+    </div>
+    <div class="lan-msg"></div>
+    <div class="sub-title">Ustawienia meczu</div>
+  </div>
+
+  <div id="slots"></div>
+  <div class="row"><span>Punkty do wygranej</span><div class="seg" id="target"></div></div>
+  <div class="row"><span>Boty</span><div class="seg" id="botlvl"></div></div>
+  <div class="row"><span>Bumerangi</span><div class="seg" id="boomlvl"></div></div>
+  <div id="warn"></div>
+  <button id="play" class="big">Graj</button>
+  <p id="hostHint" class="hint" hidden>Mecz wystartuje, gdy wszyscy goście zgłoszą gotowość. Ta karta musi zostać na wierzchu w trakcie gry.</p>
+  <button id="unhostBtn" class="plain" hidden>Zamknij pokój</button>
+
+  <details>
+    <summary>Sterowanie i zasady</summary>
+    <ul>
+      <li><b>Ruch:</b> <kbd>WASD</kbd> / strzałki</li>
+      <li><b>Atak:</b> <kbd>Spacja</kbd> / <kbd>LPM</kbd>. Stuknij, by ciąć, przytrzymaj, by rzucić.</li>
+      <li><b>Zryw:</b> <kbd>Shift</kbd> / <kbd>PPM</kbd></li>
+      <li><b>Taniec:</b> <kbd>T</kbd> w menu, lobby i w grze (ruch, atak lub zryw go przerywa).</li>
+      <li>Punkt za każde zabójstwo. <kbd>H</kbd>: ściąga, <kbd>Esc</kbd>: pauza.</li>
+    </ul>
+  </details>
+</div>
+
+<div id="lobby" class="panel" hidden>
+  <h1>Bumerangi Fu</h1>
+  <p class="tagline" id="lobRoom"></p>
+  <div id="lobPick">
+    <div class="sub-title">Wybierz postać</div>
+    <div id="lobGrid" class="char-grid"></div>
+    <p id="lobLocked" class="hint locked-note" hidden></p>
+  </div>
+  <p id="lobWatch" class="hint" hidden></p>
+  <div class="sub-title">Gracze w pokoju</div>
+  <div id="lobPlayers" class="players"></div>
+  <div id="lobSpectWrap" hidden>
+    <div class="sub-title">Widzowie</div>
+    <div id="lobSpectators" class="players"></div>
+  </div>
+  <div class="lan-msg"></div>
+  <div class="lobby-actions">
+    <button id="readyBtn" class="big">Gotowe!</button>
+    <button id="roleBtn" class="plain">Tylko oglądam</button>
+  </div>
+  <p class="hint">Naciśnij <kbd>H</kbd>, by zobaczyć sterowanie.</p>
+  <button id="leaveBtn" class="plain">Rozłącz</button>
+</div>
+
+<div id="pause" class="overlay" hidden>
+  <div class="panel">
+    <h2>Pauza</h2>
+    <p class="client-only">Host zapauzował grę.</p>
+    <button id="resume" class="big">Wznów</button>
+    <button id="quit" class="plain">Wyjdź do menu</button>
+    <button id="pauseLeave" class="plain client-only">Rozłącz</button>
+  </div>
+</div>
+
+<div id="clientEsc" class="overlay" hidden>
+  <div class="panel">
+    <h2>Wyjść?</h2>
+    <p>Gra toczy się dalej. Możesz do niej wrócić albo rozłączyć się z pokojem.</p>
+    <button id="escBack" class="big">Wróć do gry</button>
+    <button id="escLeave" class="plain">Rozłącz</button>
+  </div>
+</div>
+
+<div id="end" class="overlay" hidden>
+  <div class="panel">
+    <h2 id="endTitle"></h2>
+    <p id="endSub"></p>
+    <div id="endBoard"></div>
+    <p id="endWarn" hidden></p>
+    <button id="again" class="big">Rewanż</button>
+    <button id="toMenu" class="plain">Menu</button>
+    <p class="client-only hint">Host decyduje o rewanżu.</p>
+    <button id="clientLeave" class="plain client-only">Rozłącz</button>
+  </div>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

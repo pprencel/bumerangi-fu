@@ -1,0 +1,25 @@
+# Konfiguracja Fly.io. Wdrożenie: fly deploy --ha=false
+# Gra ma jeden pokój na serwer, więc musi działać dokładnie jedna maszyna.
+app = "bumerangi-fu"
+# Warszawa (waw) jest wycofana, Frankfurt to najbliższy działający region
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # maszyna gaśnie, gdy nikt nie jest połączony, i budzi się przy pierwszym wejściu
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 32
+    hard_limit = 48
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
